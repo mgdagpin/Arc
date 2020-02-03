@@ -1,0 +1,138 @@
+﻿@model Arc.Application.Employees.Queries.EmployeeVM
+
+@{
+    ViewBag.Title = "Home Page";
+}
+
+<style>
+    .btn {
+        border: 1px solid #acabab;
+        padding: 0px 12px;
+        font-size: 12px;
+    }
+</style>
+
+@section Scripts {
+    <script type="text/javascript">
+        $('document').ready(function () {
+            loadUsers();
+
+            $('#btnReload').on('click', function () {
+                loadUsers();
+            });
+        });
+
+        function loadUsers() {
+            $('#dvUsers').html('Loading..');
+            $.post('/Home/GetEmployeeList')
+                .done(function (r) {
+                    $('#dvUsers').html(r);
+                })
+                .fail(function (err) {
+                    $('#dvUsers').html(err);
+                });
+        }
+
+        function OnSuccess(e) {
+            if (e) {
+                enableControls(true);
+                loadUsers();
+                $('form').trigger("reset");
+            }
+        }
+
+        function OnBegin(e) {
+            enableControls(false);
+        }
+
+        function OnFailure(e) {
+            var _errMsg = e.statusText;
+
+            const regex = /(?<=(<title>))(.)+?(?=(<\/title>))/gm;
+            var str = e.responseText;
+            let m = regex.exec(str);
+            if (m != null) {
+                _errMsg = m[0];
+            }
+
+            enableControls(true, _errMsg);
+        }
+
+        function enableControls(isYes, errMsg) {
+            $('#lblLoginError').text(errMsg);
+
+            $('#btnSubmit').prop('disabled', !isYes);
+
+            if (isYes) {
+                $('#btnSubmit').text('Save Employee');
+            }
+            else {
+                $('#btnSubmit').text('Saving..');
+            }
+        }
+    </script>
+}
+
+<div class="row" style="margin-top:20px;">
+    <div class="col-md-4">
+        @using (Ajax.BeginForm("SaveEmployee", "Home", null,
+                      new AjaxOptions
+                      {
+                          HttpMethod = "POST",
+                          OnSuccess = "OnSuccess",
+                          OnFailure = "OnFailure",
+                          OnBegin = "OnBegin"
+                      }))
+        {
+            <div class="panel panel-default">
+                <div class="panel-heading">Add New Employee <button id="btnSubmit" type="submit" class="btn pull-right">Save Employee</button></div>
+                <div class="panel-body">
+                    <div class="col-md-12">
+
+                        @Html.AntiForgeryToken()
+
+                        <div class="form-group row">
+                            @Html.LabelFor(m => m.Gender, new { @class = "col-sm-5 col-form-label" })
+                            @Html.EnumDropDownListFor(m => m.Gender, new { @class = "col-sm-7" })
+                        </div>
+
+                        <div class="form-group row">
+                            @Html.LabelFor(m => m.FirstName, new { @class = "col-sm-5 col-form-label" })
+                            @Html.TextBoxFor(m => m.FirstName, new { @class = "col-sm-7" })
+                        </div>
+
+                        <div class="form-group row">
+                            @Html.LabelFor(m => m.MiddleName, new { @class = "col-sm-5 col-form-label" })
+                            @Html.TextBoxFor(m => m.MiddleName, new { @class = "col-sm-7" })
+                        </div>
+
+                        <div class="form-group row">
+                            @Html.LabelFor(m => m.LastName, new { @class = "col-sm-5 col-form-label" })
+                            @Html.TextBoxFor(m => m.LastName, new { @class = "col-sm-7" })
+                        </div>
+
+                        <div class="form-group row">
+                            @Html.LabelFor(m => m.EmailAddress, new { @class = "col-sm-5 col-form-label" })
+                            @Html.TextBoxFor(m => m.EmailAddress, new { type = "email", @class = "col-sm-7" })
+                        </div>
+
+                        <br />
+                        <label id="lblLoginError" style="color:red;"></label>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="col-md-8">
+
+        <div class="panel panel-default">
+            <div class="panel-heading">Employee List <button id="btnReload" type="button" class="btn pull-right">Reload</button></div>
+            <div class="panel-body">
+                <div id="dvUsers" class="col-md-12">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Scripts.Render("~/bundles/jqueryval")
